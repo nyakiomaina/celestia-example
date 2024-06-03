@@ -10,7 +10,7 @@ async fn get_block_hash(api_endpoint: &str, block_number: u64) -> Result<String,
     if response.status().is_success() {
         let response_text = response.text().await.map_err(|e| e.to_string())?;
         println!("Response Body: {}", response_text);
-        Ok(response_text)  // Return the raw response text
+        Ok(response_text)
     } else {
         Err(format!("Failed to retrieve block hash: {}", response.status()))
     }
@@ -19,7 +19,7 @@ async fn get_block_hash(api_endpoint: &str, block_number: u64) -> Result<String,
 #[tokio::main]
 async fn main() {
     let api_endpoints = [
-        "https://public-celestia-rpc.numia.xyz/"
+        "https://public-celestia-rpc.numia.xyz"
     ];
 
     for api_endpoint in api_endpoints.iter() {
