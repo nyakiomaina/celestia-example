@@ -1,33 +1,31 @@
-use reqwest::Error;
+use celestia_rpc::{Client, HeaderClient};
 use tokio;
 
-async fn get_block_hash(api_endpoint: &str, block_number: u64) -> Result<String, String> {
-    let url = format!("{}/block?height={}", api_endpoint, block_number);
-    println!("Requesting URL: {}", url);
-    let response = reqwest::get(&url).await.map_err(|e| e.to_string())?;
-    println!("Response Status: {}", response.status());
+async fn get_block_hash(block_number: u64, token: Option<&str>) -> Result<String, String> {
+    let api_endpoint = "https://public-celestia-rpc.numia.xyz";
+    let client = Client::new(api_endpoint, token).await.map_err(|e| e.to_string())?;
 
-    if response.status().is_success() {
-        let response_text = response.text().await.map_err(|e| e.to_string())?;
-        println!("Response Body: {}", response_text);
-        Ok(response_text)
-    } else {
-        Err(format!("Failed to retrieve block hash: {}", response.status()))
+    match client.header_wait_for_height(block_number).await {
+        Ok(header) => {
+            println!("Block hash: {:?}", header.hash());
+            Ok(header.hash().to_string())
+        },
+        Err(e) => {
+            println!("Failed to retrieve block hash: {}", e);
+            Err(format!("Failed to retrieve block hash: {}", e))
+        },
     }
 }
 
 #[tokio::main]
 async fn main() {
-    let api_endpoints = [
-        "https://public-celestia-rpc.numia.xyz"
-    ];
+    let token: Option<&str> = None;
+    let block_numbers = [1u64];
 
-    for api_endpoint in api_endpoints.iter() {
-        for block_number in [1u64].iter() {
-            match get_block_hash(api_endpoint, *block_number).await {
-                Ok(block_hash) => println!("Block Hash for block number {} from {}: {}", block_number, api_endpoint, block_hash),
-                Err(e) => println!("Error for block number {} from {}: {}", block_number, api_endpoint, e),
-            }
+    for block_number in block_numbers.iter() {
+        match get_block_hash(*block_number, token).await {
+            Ok(block_hash) => println!("Block Hash for block number {}: {}", block_number, block_hash),
+            Err(e) => println!("Error for block number {}: {}", block_number, e),
         }
     }
 }
