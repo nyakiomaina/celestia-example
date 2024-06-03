@@ -47,7 +47,7 @@ async fn main() {
     ];
 
     for api_endpoint in api_endpoints.iter() {
-        for block_number in [1917526u64].iter() {
+        for block_number in [0u64].iter() { // Querying the genesis block
             match get_block_hash(api_endpoint, *block_number).await {
                 Ok(block_hash) => println!("Block Hash for block number {} from {}: {}", block_number, api_endpoint, block_hash),
                 Err(e) => println!("Error for block number {} from {}: {}", block_number, api_endpoint, e),
