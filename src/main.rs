@@ -3,16 +3,26 @@ use tokio;
 
 async fn get_block_hash(block_number: u64, token: Option<&str>) -> Result<String, String> {
     let api_endpoint = "https://public-celestia-rpc.numia.xyz";
-    let client = Client::new(api_endpoint, token).await.map_err(|e| e.to_string())?;
+    eprintln!("Using API endpoint: {}", api_endpoint);
 
-    match client.header_wait_for_height(block_number).await {
+    let client = Client::new(api_endpoint, token).await.map_err(|e| {
+        eprintln!("Error creating client: {}", e);
+        e.to_string()
+    })?;
+
+    eprintln!("Attempting to fetch block header for block number: {}", block_number);
+
+    match client.header_get_by_height(block_number).await {
         Ok(header) => {
-            println!("Block hash: {:?}", header.hash());
-            Ok(header.hash().to_string())
+            let hash_bytes = header.hash();
+            let hex_hash = hex::encode(hash_bytes);
+            println!("Received header: {:?}", header);
+            println!("Block hash: {}", hex_hash);
+            Ok(hex_hash)
         },
         Err(e) => {
-            println!("Failed to retrieve block hash: {}", e);
-            Err(format!("Failed to retrieve block hash: {}", e))
+            eprintln!("Failed to retrieve block header for block number {}: {}", block_number, e);
+            Err(format!("Failed to retrieve block header: {}", e))
         },
     }
 }
@@ -20,12 +30,10 @@ async fn get_block_hash(block_number: u64, token: Option<&str>) -> Result<String
 #[tokio::main]
 async fn main() {
     let token: Option<&str> = None;
-    let block_numbers = [1u64];
+    let block_number = 1u64;
 
-    for block_number in block_numbers.iter() {
-        match get_block_hash(*block_number, token).await {
-            Ok(block_hash) => println!("Block Hash for block number {}: {}", block_number, block_hash),
-            Err(e) => println!("Error for block number {}: {}", block_number, e),
-        }
+    match get_block_hash(block_number, token.as_deref()).await {
+        Ok(block_hash) => println!("Block Hash for block number {}: {}", block_number, block_hash),
+        Err(e) => eprintln!("Error for block number {}: {}", block_number, e),
     }
 }
