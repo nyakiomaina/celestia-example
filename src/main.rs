@@ -1,8 +1,10 @@
 use celestia_rpc::{Client, HeaderClient};
 use tokio;
+use dotenv::dotenv;
+use std::env;
 
 async fn get_block_hash(block_number: u64, token: Option<&str>) -> Result<String, String> {
-    let api_endpoint = "https://public-celestia-rpc.numia.xyz";
+    let api_endpoint = "http://localhost:26658";
     eprintln!("Using API endpoint: {}", api_endpoint);
 
     let client = Client::new(api_endpoint, token).await.map_err(|e| {
@@ -29,9 +31,11 @@ async fn get_block_hash(block_number: u64, token: Option<&str>) -> Result<String
 
 #[tokio::main]
 async fn main() {
-    let token: Option<&str> = None;
-    let block_number = 1u64;
+    dotenv().ok();
 
+    let token = env::var("AUTH_TOKEN").ok();
+
+    let block_number = 1u64;
     match get_block_hash(block_number, token.as_deref()).await {
         Ok(block_hash) => println!("Block Hash for block number {}: {}", block_number, block_hash),
         Err(e) => eprintln!("Error for block number {}: {}", block_number, e),

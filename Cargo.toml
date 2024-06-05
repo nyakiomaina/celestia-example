@@ -13,3 +13,4 @@ tokio = { version = "1", features = ["full"] }
 celestia-rpc = {git = "https://github.com/eigerco/lumina"}
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 hex = "0.4"
+dotenv = "0.15.0"
