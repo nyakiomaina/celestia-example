@@ -35,6 +35,8 @@ async fn main() {
 
     let token = env::var("AUTH_TOKEN").ok();
 
+    println!("Using AUTH_TOKEN: {:?}", token);
+
     let block_number = 1u64;
     match get_block_hash(block_number, token.as_deref()).await {
         Ok(block_hash) => println!("Block Hash for block number {}: {}", block_number, block_hash),
