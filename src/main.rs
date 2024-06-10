@@ -1,17 +1,14 @@
-use celestia_rpc::{Client, HeaderClient};
+use ethers::prelude::*;
+use ethers::providers::{Provider, Http};
+use ethers::signers::{LocalWallet, SigningKey};
+use std::sync::Arc;
 use tokio;
 use dotenv::dotenv;
 use std::env;
+use hex::decode;
+use celestia_rpc::{Client, HeaderClient};
 
-async fn get_block_hash(block_number: u64, token: Option<&str>) -> Result<String, String> {
-    let api_endpoint = "http://localhost:26658";
-    eprintln!("Using API endpoint: {}", api_endpoint);
-
-    let client = Client::new(api_endpoint, token).await.map_err(|e| {
-        eprintln!("Error creating client: {}", e);
-        e.to_string()
-    })?;
-
+async fn get_block_hash(client: &Client, block_number: u64) -> Result<String, String> {
     eprintln!("Attempting to fetch block header for block number: {}", block_number);
 
     match client.header_get_by_height(block_number).await {
@@ -30,16 +27,33 @@ async fn get_block_hash(block_number: u64, token: Option<&str>) -> Result<String
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-
     let token = env::var("AUTH_TOKEN").ok();
-
     println!("Using AUTH_TOKEN: {:?}", token);
 
+    let api_endpoint = "http://localhost:26658";
+    let anvil_url = "http://localhost:8545";
+
+    let celestia_client = Client::new(api_endpoint, token.as_deref()).await?;
+    let provider = Provider::<Http>::try_from(anvil_url)?;
+    let wallet = LocalWallet::from(
+        SigningKey::from_bytes(&decode("key")?).expect("Decoding failed")
+    );
+    let client = Arc::new(SignerMiddleware::new(provider, wallet));
+
     let block_number = 1u64;
-    match get_block_hash(block_number, token.as_deref()).await {
-        Ok(block_hash) => println!("Block Hash for block number {}: {}", block_number, block_hash),
-        Err(e) => eprintln!("Error for block number {}: {}", block_number, e),
-    }
+    let block_hash = get_block_hash(&celestia_client, block_number).await?;
+    println!("Block Hash for block number {}: {}", block_number, block_hash);
+
+    let tx = TransactionRequest::new()
+        .to("0xFF00000000000000000000000000000000000010")
+        .value(0u64.into())
+        .data(hex::encode(format!("0x{}", block_hash)).into())
+        .gas(100000.into());
+
+    let tx_hash = client.send_transaction(tx, None).await?;
+    println!("Transaction sent with hash: {:?}", tx_hash);
+
+    Ok(())
 }
