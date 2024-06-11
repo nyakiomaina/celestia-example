@@ -36,6 +36,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("AUTH_TOKEN").ok();
     println!("Using AUTH_TOKEN: {:?}", token);
     let private_key_hex = env::var("PRIVATE_KEY").expect("PRIVATE_KEY must be set");
+    println!("Using private key: {:?}", private_key_hex);
+
+    let cleaned_private_key = if private_key_hex.starts_with("0x") {
+        &private_key_hex[2..]
+    } else {
+        &private_key_hex[..]
+    };
 
     let api_endpoint = "http://localhost:26658";
     let anvil_url = "http://localhost:8545";
@@ -44,7 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = Provider::<Http>::try_from(anvil_url)?;
     let chain_id = provider.get_chainid().await?.as_u64();
 
-    let private_key_bytes = decode(private_key_hex).expect("Invalid private key format");
+    let private_key_bytes = decode(cleaned_private_key).expect("Invalid private key format");
 
     let wallet = Wallet::from_bytes(&private_key_bytes).expect("Invalid private key");
 
@@ -56,10 +63,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let calldata = format!("{}{}", hex::encode(block_hash.clone()), hex::encode(block_hash));
 
     let tx: TransactionRequest = TransactionRequest {
+        from: Some("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266".parse()?),
         to: Some("0xFF00000000000000000000000000000000000010".parse()?),
         value: Some(0u64.into()),
         data: Some(calldata.into_bytes().into()),
         gas: Some(100000.into()),
+        gas_price: Some(1.into()),
         chain_id: Some(chain_id.into()),
         ..Default::default()
     };
