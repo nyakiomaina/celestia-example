@@ -50,22 +50,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let celestia_client = Client::new(api_endpoint, token.as_deref()).await?;
     let provider = Provider::<Http>::try_from(anvil_url)?;
     let chain_id = provider.get_chainid().await?.as_u64();
+    println!("Connected to chain with chain id: {}", chain_id);
 
     let private_key_bytes = decode(cleaned_private_key).expect("Invalid private key format");
 
     let wallet = Wallet::from_bytes(&private_key_bytes).expect("Invalid private key");
 
-    let client = Arc::new(SignerMiddleware::new(provider, wallet));
+    let client = Arc::new(SignerMiddleware::new(provider, wallet.clone()));
     let block_number = 1u64;
     let block_hash = get_block_hash(&celestia_client, block_number).await?;
     println!("Block Hash for block number {}: {}", block_number, block_hash);
 
     let calldata = format!("{}{}", hex::encode(block_hash.clone()), hex::encode(block_hash));
 
+    let nonce = client.get_transaction_count(wallet.address(), None).await?;
+    println!("Using nonce: {}", nonce);
+
     let tx: TransactionRequest = TransactionRequest {
-        from: Some("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266".parse()?),
+        from: Some(wallet.address()),
         to: Some("0xFF00000000000000000000000000000000000010".parse()?),
-        value: Some(0u64.into()),
+        value: Some(1.into()),
         data: Some(calldata.into_bytes().into()),
         gas: Some(100000.into()),
         gas_price: Some(1.into()),
