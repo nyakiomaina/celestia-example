@@ -64,6 +64,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
+    println!("using chain id: {}", chain_id);
+    println!("transaction details: {:?}", tx);
+
     let tx_hash = client.send_transaction(tx, None).await?;
     println!("Transaction sent with hash: {:?}", tx_hash);
 
