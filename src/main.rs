@@ -1,6 +1,6 @@
 use ethers::prelude::*;
 use ethers::providers::{Provider, Http};
-use ethers::signers::{LocalWallet, SigningKey};
+use ethers::signers::Wallet;
 use std::sync::Arc;
 use tokio;
 use dotenv::dotenv;
@@ -29,28 +29,35 @@ async fn get_block_hash(client: &Client, block_number: u64) -> Result<String, St
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
+    // println!("Environment Variables Loaded");
+    // for (key, value) in env::vars() {
+    //     println!("{}: {}", key, value);
+    // }
     let token = env::var("AUTH_TOKEN").ok();
     println!("Using AUTH_TOKEN: {:?}", token);
+    let private_key_hex = env::var("PRIVATE_KEY").expect("PRIVATE_KEY must be set");
 
     let api_endpoint = "http://localhost:26658";
     let anvil_url = "http://localhost:8545";
 
     let celestia_client = Client::new(api_endpoint, token.as_deref()).await?;
     let provider = Provider::<Http>::try_from(anvil_url)?;
-    let wallet = LocalWallet::from(
-        SigningKey::from_bytes(&decode("key")?).expect("Decoding failed")
-    );
-    let client = Arc::new(SignerMiddleware::new(provider, wallet));
+    let private_key_bytes = decode(private_key_hex).expect("Invalid private key format");
 
+    let wallet = Wallet::from_bytes(&private_key_bytes).expect("Invalid private key");
+
+    let client = Arc::new(SignerMiddleware::new(provider, wallet));
     let block_number = 1u64;
     let block_hash = get_block_hash(&celestia_client, block_number).await?;
     println!("Block Hash for block number {}: {}", block_number, block_hash);
 
-    let tx = TransactionRequest::new()
+    let calldata = format!("{}{}", hex::encode(block_hash.clone()), hex::encode(block_hash));
+
+    let tx: TransactionRequest = TransactionRequest::new()
         .to("0xFF00000000000000000000000000000000000010")
-        .value(0u64.into())
-        .data(hex::encode(format!("0x{}", block_hash)).into())
-        .gas(100000.into());
+        .value(0u64)
+        .data(calldata.into_bytes())
+        .gas(100000);
 
     let tx_hash = client.send_transaction(tx, None).await?;
     println!("Transaction sent with hash: {:?}", tx_hash);
