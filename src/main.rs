@@ -42,6 +42,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let celestia_client = Client::new(api_endpoint, token.as_deref()).await?;
     let provider = Provider::<Http>::try_from(anvil_url)?;
+    let chain_id = provider.get_chainid().await?.as_u64();
+
     let private_key_bytes = decode(private_key_hex).expect("Invalid private key format");
 
     let wallet = Wallet::from_bytes(&private_key_bytes).expect("Invalid private key");
@@ -53,11 +55,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let calldata = format!("{}{}", hex::encode(block_hash.clone()), hex::encode(block_hash));
 
-    let tx: TransactionRequest = TransactionRequest::new()
-        .to("0xFF00000000000000000000000000000000000010")
-        .value(0u64)
-        .data(calldata.into_bytes())
-        .gas(100000);
+    let tx: TransactionRequest = TransactionRequest {
+        to: Some("0xFF00000000000000000000000000000000000010".parse()?),
+        value: Some(0u64.into()),
+        data: Some(calldata.into_bytes().into()),
+        gas: Some(100000.into()),
+        chain_id: Some(chain_id.into()),
+        ..Default::default()
+    };
 
     let tx_hash = client.send_transaction(tx, None).await?;
     println!("Transaction sent with hash: {:?}", tx_hash);
