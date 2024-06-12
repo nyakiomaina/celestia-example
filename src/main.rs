@@ -29,14 +29,9 @@ async fn get_block_hash(client: &Client, block_number: u64) -> Result<String, St
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    // println!("Environment Variables Loaded");
-    // for (key, value) in env::vars() {
-    //     println!("{}: {}", key, value);
-    // }
     let token = env::var("AUTH_TOKEN").ok();
     println!("Using AUTH_TOKEN: {:?}", token);
     let private_key_hex = env::var("PRIVATE_KEY").expect("PRIVATE_KEY must be set");
-    //println!("Using private key: {:?}", private_key_hex);
 
     let cleaned_private_key = if private_key_hex.starts_with("0x") {
         &private_key_hex[2..]
@@ -75,8 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tx = TransactionRequest {
         from: Some(client.address()),
         to: Some("0xff00000000000000000000000000000000000010".parse()?),
-        value: Some(1.into()),
-        gas: Some(100000.into()),
+        value: Some(0u64.into()),
         gas_price: Some((base_fee_per_gas + U256::from(10_000_000_000u64)).into()),
         data: Some(calldata.into_bytes().into()),
         chain_id: Some(chain_id.into()),
