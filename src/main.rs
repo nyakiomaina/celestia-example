@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let token = env::var("AUTH_TOKEN").ok();
     println!("Using AUTH_TOKEN: {:?}", token);
     let private_key_hex = env::var("PRIVATE_KEY").expect("PRIVATE_KEY must be set");
-    println!("Using private key: {:?}", private_key_hex);
+    //println!("Using private key: {:?}", private_key_hex);
 
     let cleaned_private_key = if private_key_hex.starts_with("0x") {
         &private_key_hex[2..]
