@@ -55,8 +55,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let private_key_bytes = decode(cleaned_private_key).expect("Invalid private key format");
 
     let wallet = Wallet::from_bytes(&private_key_bytes).expect("Invalid private key");
+    let wallet = wallet.with_chain_id(chain_id);
 
-    let client = Arc::new(SignerMiddleware::new(provider, wallet.clone()));
+    let client = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
     let block_number = 1u64;
     let block_hash = get_block_hash(&celestia_client, block_number).await?;
     println!("Block Hash for block number {}: {}", block_number, block_hash);
@@ -66,13 +67,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let nonce = client.get_transaction_count(wallet.address(), None).await?;
     println!("Using nonce: {}", nonce);
 
-    let tx: TransactionRequest = TransactionRequest {
-        from: Some(wallet.address()),
-        to: Some("0xFF00000000000000000000000000000000000010".parse()?),
+    let latest_block = provider.get_block(BlockId::Number(BlockNumber::Latest)).await?
+    .expect("Failed to fetch the latest block");
+    let base_fee_per_gas = latest_block.base_fee_per_gas
+    .expect("No base fee per gas provided");
+
+    let tx = TransactionRequest {
+        from: Some(client.address()),
+        to: Some("0xff00000000000000000000000000000000000010".parse()?),
         value: Some(1.into()),
-        data: Some(calldata.into_bytes().into()),
         gas: Some(100000.into()),
-        gas_price: Some(1.into()),
+        gas_price: Some((base_fee_per_gas + U256::from(10_000_000_000u64)).into()),
+        data: Some(calldata.into_bytes().into()),
         chain_id: Some(chain_id.into()),
         ..Default::default()
     };
