@@ -39,8 +39,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &private_key_hex[..]
     };
 
-    let api_endpoint = "http://localhost:26658";
-    let anvil_url = "http://localhost:8545";
+    let api_endpoint = "http://celestia-node:26658";
+    let anvil_url = "http://anvil:8545";
 
     let celestia_client = Client::new(api_endpoint, token.as_deref()).await?;
     let provider = Provider::<Http>::try_from(anvil_url)?;
