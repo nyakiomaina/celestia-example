@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Block Hash for block number {}: {}", block_number, block_hash);
 
     let calldata = format!("{}{}", hex::encode(block_number.to_be_bytes()), block_hash);
-   // println!("calldata: {}", calldata);
+    println!("calldata: {}", calldata);
 
     let nonce = client.get_transaction_count(wallet.address(), None).await?;
     println!("Using nonce: {}", nonce);
@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         from: Some(client.address()),
         to: Some("0xff00000000000000000000000000000000000010".parse()?),
         value: Some(0u64.into()),
-        data: Some(hex::decode(calldata)?),
+        data: Some(hex::decode(calldata)?.into()),
         chain_id: Some(chain_id.into()),
         ..Default::default()
     };
