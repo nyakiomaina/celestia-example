@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let block_hash = get_block_hash(&celestia_client, block_number).await?;
     println!("Block Hash for block number {}: {}", block_number, block_hash);
 
-    let calldata = format!("{}{}", hex::encode(block_number.to_be_bytes()), hex::encode(block_hash));
+    let calldata = format!("{}{}", hex::encode(block_number.to_be_bytes()), block_hash);
    // println!("calldata: {}", calldata);
 
     let nonce = client.get_transaction_count(wallet.address(), None).await?;
