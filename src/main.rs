@@ -60,6 +60,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let calldata = format!("{}{}", hex::encode(block_number.to_be_bytes()), block_hash);
     println!("calldata: {}", calldata);
 
+    let decoded_calldata = hex::decode(&calldata)
+    .map_err(|e| format!("Error decoding calldata: {}", e))?;
+    println!("Decoded calldata bytes: {:?}", decoded_calldata);
+
     let nonce = client.get_transaction_count(wallet.address(), None).await?;
     println!("Using nonce: {}", nonce);
 
@@ -67,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         from: Some(client.address()),
         to: Some("0xff00000000000000000000000000000000000010".parse()?),
         value: Some(0u64.into()),
-        data: Some(hex::decode(calldata)?.into()),
+        data: Some(decoded_calldata.into()),
         chain_id: Some(chain_id.into()),
         ..Default::default()
     };
