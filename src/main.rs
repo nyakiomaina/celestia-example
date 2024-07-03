@@ -67,7 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         from: Some(client.address()),
         to: Some("0xff00000000000000000000000000000000000010".parse()?),
         value: Some(0u64.into()),
-        data: Some(calldata.into_bytes().into()),
+        data: Some(hex::decode(calldata)?),
         chain_id: Some(chain_id.into()),
         ..Default::default()
     };
