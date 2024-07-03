@@ -29,8 +29,8 @@ async fn get_block_hash(client: &Client, block_number: u64) -> Result<String, St
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    //let token = env::var("AUTH_TOKEN").ok();
-    //println!("Using AUTH_TOKEN: {:?}", token);
+    let token = env::var("AUTH_TOKEN").ok();
+    println!("Using AUTH_TOKEN: {:?}", token);
     let private_key_hex = env::var("PRIVATE_KEY").expect("PRIVATE_KEY must be set");
 
     let cleaned_private_key = if private_key_hex.starts_with("0x") {
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let api_endpoint = "http://192.168.147.2:26658";
     let anvil_url = "http://anvil:8545";
 
-    let celestia_client = Client::new(api_endpoint, None).await?;
+    let celestia_client = Client::new(api_endpoint, token.as_deref()).await?;
     let provider = Provider::<Http>::try_from(anvil_url)?;
     let chain_id = provider.get_chainid().await?.as_u64();
     println!("Connected to chain with chain id: {}", chain_id);
