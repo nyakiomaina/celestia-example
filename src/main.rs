@@ -53,45 +53,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wallet = wallet.with_chain_id(chain_id);
 
     let client = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
-    // let block_number = 1u64;
-    // let block_hash = get_block_hash(&celestia_client, block_number).await?;
-    // println!("Block Hash for block number {}: {}", block_number, block_hash);
 
     for block_number in 1..=10 {
-        match get_block_hash(&celestia_client, block_number).await {
-            Ok(block_hash) => {
-                println!("Block Hash for block number {}: {}", block_number, block_hash);
-            },
-            Err(e) => {
-                eprintln!("Failed to retrieve block hash for block number {}: {}", block_number, e);
-            },
+        if let Ok(block_hash) = get_block_hash(&celestia_client, block_number).await {
+            let calldata = format!("{}{}", hex::encode(block_number.to_be_bytes()), block_hash);
+            if let Ok(decoded_calldata) = hex::decode(&calldata) {
+                let nonce = client.get_transaction_count(wallet.address(), None).await?;
+                let tx = TransactionRequest {
+                    from: Some(client.address()),
+                    to: Some("0xff00000000000000000000000000000000000010".parse()?),
+                    value: Some(0u64.into()),
+                    data: Some(decoded_calldata.into()),
+                    chain_id: Some(chain_id.into()),
+                    nonce: Some(nonce),
+                    ..Default::default()
+                };
+                let tx_hash = client.send_transaction(tx, None).await?;
+                println!("Transaction sent for block {}: {:?}", block_number, tx_hash);
+            }
         }
     }
-
-    let calldata = format!("{}{}", hex::encode(block_number.to_be_bytes()), block_hash);
-    println!("calldata: {}", calldata);
-
-    let decoded_calldata = hex::decode(&calldata)
-    .map_err(|e| format!("Error decoding calldata: {}", e))?;
-    println!("Decoded calldata bytes: {:?}", decoded_calldata);
-
-    let nonce = client.get_transaction_count(wallet.address(), None).await?;
-    println!("Using nonce: {}", nonce);
-
-    let tx = TransactionRequest {
-        from: Some(client.address()),
-        to: Some("0xff00000000000000000000000000000000000010".parse()?),
-        value: Some(0u64.into()),
-        data: Some(decoded_calldata.into()),
-        chain_id: Some(chain_id.into()),
-        ..Default::default()
-    };
-
-    println!("using chain id: {}", chain_id);
-    println!("transaction details: {:?}", tx);
-
-    let tx_hash = client.send_transaction(tx, None).await?;
-    println!("Transaction sent with hash: {:?}", tx_hash);
 
     Ok(())
 }
