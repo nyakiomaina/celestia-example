@@ -53,9 +53,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wallet = wallet.with_chain_id(chain_id);
 
     let client = Arc::new(SignerMiddleware::new(provider.clone(), wallet.clone()));
-    let block_number = 1u64;
-    let block_hash = get_block_hash(&celestia_client, block_number).await?;
-    println!("Block Hash for block number {}: {}", block_number, block_hash);
+    // let block_number = 1u64;
+    // let block_hash = get_block_hash(&celestia_client, block_number).await?;
+    // println!("Block Hash for block number {}: {}", block_number, block_hash);
+
+    for block_number in 1..=10 {
+        match get_block_hash(&celestia_client, block_number).await {
+            Ok(block_hash) => {
+                println!("Block Hash for block number {}: {}", block_number, block_hash);
+            },
+            Err(e) => {
+                eprintln!("Failed to retrieve block hash for block number {}: {}", block_number, e);
+            },
+        }
+    }
 
     let calldata = format!("{}{}", hex::encode(block_number.to_be_bytes()), block_hash);
     println!("calldata: {}", calldata);
